@@ -1,0 +1,25 @@
+<html>
+    <head>
+        <link href="main.css" rel="stylesheet">
+        <link href="highlight.css" rel="stylesheet">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Rosario&display=swap" rel="stylesheet">
+    </head>
+  <body>
+    <div id="setup-window">
+        <h1>Setup ReadDocs</h1>
+        <input type="text" placeholder="API Key" id="apiKey" />
+        <button style="display: block;" id="connect-btn">Connect</button>
+    </div>
+    <div id="prompt-window" style="display: none;">
+        <h1>Ask ReadDocs</h1>
+        <input type="text" placeholder="Ask question (Press &#8626;)" id="prompt" />
+        <p id="response" style="font-size: 15px; max-width: 90%;">
+        </p>
+    </div>
+    <script src="./marked.min.js"></script>
+    <script src="./highlight.min.js"></script>
+    <script src="main.js" type="module"></script>
+  </body>
+</html>
