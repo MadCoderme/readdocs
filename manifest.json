@@ -1,11 +1,16 @@
 {
     "manifest_version": 3,
     "name": "Read Docs",
-    "description": "Let AI read the docs for you and make you code faster",
-    "version": "1.0",
+    "description": "Let AI read the docs for you and help you code faster",
+    "version": "0.1",
     "action": {
       "default_popup": "readdocs.html",
-      "default_icon": "icon.png"
+      "default_icon": "icons/icon.png"
+    },
+    "icons": {
+      "16": "icons/16x16.png",
+      "48": "icons/48x48.png",
+      "128": "icons/128x128.png"
     },
     "permissions": [
         "storage",

@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "./google-generative-ai.js"
+import { GoogleGenerativeAI } from "./scripts/google-generative-ai.js"
  
 let isInitialized = false
 
@@ -7,6 +7,8 @@ chrome.storage.sync.get(['apiKey']).then(val => {
         startProcess(val.apiKey)
         document.getElementById('setup-window').style.display = 'none'
         document.getElementById('prompt-window').style.display = 'block'
+        document.getElementById('prompt').value = ''
+        document.getElementById('response').innerHTML = ''
     } 
 })
 
@@ -18,6 +20,8 @@ document.getElementById('connect-btn').addEventListener('click', (ev) => {
             startProcess(key)
             document.getElementById('setup-window').style.display = 'none'
             document.getElementById('prompt-window').style.display = 'block'
+            document.getElementById('prompt').value = ''
+            document.getElementById('response').innerHTML = ''
         })
     }
     
@@ -51,10 +55,11 @@ document.querySelector('#prompt').addEventListener('keypress', async(e) => {
 
         let input = document.getElementById('prompt').value
 
-        document.getElementById('prompt').value = ''
-        document.getElementById('response').innerHTML = `<b><u>${input}</u></b><br /><br />`
-
         if (input.length < 5) return
+
+        document.getElementById('prompt').value = ''
+        document.getElementById('response').innerHTML = `<b><u>${input}</u></b><br /><br />Generating...`
+
         if (!isInitialized) {
             chrome.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
                 var activeTab = tabs[0]
@@ -67,16 +72,25 @@ document.querySelector('#prompt').addEventListener('keypress', async(e) => {
                     args: ['body']
                 })
             }).then(async (results) => {
-                const result = await window.chat.sendMessageStream(`Here you go: ${results[0].result}
-                And my first question is: ${input}` )
+                try {
+                    const result = await window.chat.sendMessageStream(`Here you go: ${results[0].result}
+                    And my first question is: ${input}` )
 
-                let text = document.getElementById('response').innerHTML
-                for await (const chunk of result.stream) {
-                    const chunkText = chunk.text()
-                    text += chunkText
-                    document.getElementById('response').innerHTML = marked.parse(text)
-                    hljs.highlightAll()
+                    let text = document.getElementById('response').innerHTML.replace('Generating...', '')
+                    for await (const chunk of result.stream) {
+                        const chunkText = chunk.text()
+                        text += chunkText
+                        document.getElementById('response').innerHTML = marked.parse(text)
+                        hljs.highlightAll()
+                    }
+                } catch(e) {
+                    if (e.message.includes('API_KEY_INVALID')) {
+                        document.getElementById('setup-window').style.display = 'block'
+                        document.getElementById('prompt-window').style.display = 'none'
+                        alert('Your API Key is invalid. Try again with a valid key')
+                    }
                 }
+
 
             })
         }
@@ -84,7 +98,7 @@ document.querySelector('#prompt').addEventListener('keypress', async(e) => {
         {
             const result = await window.chat.sendMessageStream(`My next question is: ${input}` )
             
-            let text = document.getElementById('response').innerHTML
+            let text = document.getElementById('response').innerHTML.replace('Generating...', '')
             for await (const chunk of result.stream) {
                 const chunkText = chunk.text()
                 text += chunkText
