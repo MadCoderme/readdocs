@@ -1,4 +1,4 @@
-## Internal Code Documentation for Google Generative AI Integration
+## Internal Code Documentation By Supacodes
 
 ### Table of Contents
 
