@@ -5,50 +5,64 @@
 - [Architecture](#architecture)
 - [Getting Started](#getting-started)
 - [Example Usage](#example-usage)
+- [Internal Documentation](#internal-documentation)
 
 ## Introduction
 
-The Google Generative AI extension is a Chrome extension that allows users to interact with Google's Generative AI models through a chat-based interface. The extension provides a simple and convenient way to get started with Generative AI, and it can be used for a variety of tasks, such as:
-
-- Answering questions
-- Generating text
-- Translating languages
-- Summarizing documents
+This document provides internal documentation for the Google Generative AI Chrome extension code. The code implements the functionality of the extension, which allows users to interact with Google's Generative AI models through a chat-based interface.
 
 ## Functionality
 
-The Google Generative AI extension offers a range of functionality, including:
+The code performs the following functions:
 
-- **Chat-based interface:** The extension provides a chat-based interface that makes it easy to interact with Google's Generative AI models. Users can simply type in a question or prompt, and the model will respond with a generated response.
-- **Model selection:** The extension allows users to select from a variety of Generative AI models. Each model has its own strengths and weaknesses, so users can choose the model that is best suited for their task.
-- **History:** The extension keeps a history of all conversations with Generative AI models. This allows users to easily review past conversations and track their progress.
+- Initializes the extension by checking for an API key and displaying the appropriate界面.
+- Establishes a connection to the Generative AI API using the provided API key.
+- Starts a chat session with the selected model and provides an initial history.
+- Handles user input and generates responses using the chat session.
+- Displays the generated responses in the UI.
+- Highlights code snippets using hljs.
 
 ## Architecture
 
-The Google Generative AI extension is built on a client-server architecture. The client-side code runs in the user's browser, and it communicates with a server-side API. The server-side API is responsible for interacting with Google's Generative AI models.
+The code is structured as follows:
+
+- **HTML:** The HTML file defines the user interface, including the setup window, prompt window, and response area.
+- **JavaScript:** The JavaScript code handles the logic of the extension, including initialization, API interaction, and UI updates.
+- **GoogleGenerativeAI.js:** This file contains the implementation of the GoogleGenerativeAI class, which provides methods for interacting with the Generative AI API.
 
 ## Getting Started
 
-To get started with the Google Generative AI extension, you will need to:
+Developers working on the extension can use this code as a starting point. Before running the code, ensure you have:
 
-1. Install the extension from the Chrome Web Store.
-2. Create a Google Cloud account.
-3. Get an API key from the Google Cloud Console.
-4. Open the extension and enter your API key.
-
-Once you have completed these steps, you will be able to start using the extension.
+- Installed the necessary dependencies (marked.js and hljs)
+- Provided a valid API key in the Chrome storage
 
 ## Example Usage
 
-Here is an example of how to use the Google Generative AI extension to generate a summary of a document:
+This code can be used to implement various features related to Generative AI interaction. For example, you could:
 
-1. Open the Google Generative AI extension.
-2. Select the "Summarize" model.
-3. Type in the text of the document that you want to summarize.
-4. Click the "Generate" button.
+- Integrate it with other tools or applications
+- Extend the functionality with additional models or commands
+- Customize the UI and branding
 
-The extension will generate a summary of the document and display it in the chat window.
+## Internal Documentation
 
-## Conclusion
+### `startProcess` Function
 
-The Google Generative AI extension is a powerful tool that can help users to get started with Generative AI. The extension provides a simple and convenient way to interact with Google's Generative AI models, and it can be used for a variety of tasks.
+The `startProcess` function initializes the connection to the Generative AI API and starts a chat session. It takes an API key as an argument and performs the following steps:
+
+1. Creates an instance of the `GoogleGenerativeAI` class.
+2. Obtains the generative model using the provided model name.
+3. Initializes the chat session with an initial history.
+
+### `getDOM` Function
+
+The `getDOM` function is used to retrieve the inner text of the HTML document body. It takes a selector as an argument and returns the text content.
+
+### `sendMessageStream` Function
+
+The `sendMessageStream` function sends a message to the chat session and returns a stream of chunks representing the generated response. It takes the message text as an argument and handles errors related to invalid API keys.
+
+### `highlightAll` Function
+
+The `highlightAll` function highlights all code snippets in the document using hljs. This helps呈現generated code and improves readability.
