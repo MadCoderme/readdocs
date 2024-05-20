@@ -33,14 +33,14 @@ function startProcess(API_KEY) {
 
     window.chat = model.startChat({
         history: [
-        {
-            role: "user",
-            parts: [{ text: "You are a helper bot that reads documentations and answers questions or explains steps based on that. Be technical and provide to-the-point answers. I will be providing you the html page of the documentation as the knowledge source. Using this answer me further queries." }],
-        },
-        {
-            role: "model",
-            parts: [{ text: "Okay! Share me the documentation and I will help you" }],
-        },
+         {
+             role: "user",
+             parts: [{ text: "You are a helper bot that reads documentations and answers questions or explains steps based on that. Be technical and provide to-the-point answers. I will be providing you the html page of the documentation as the knowledge source. Using this answer me further queries." }],
+         },
+         {
+             role: "model",
+             parts: [{ text: "Okay! Share me the documentation and I will help you" }],
+         },
         ]
     })
 }
