@@ -1,68 +1,154 @@
-## Table of Contents
+## Internal Code Documentation
 
-- [Introduction](#introduction)
-- [Functionality](#functionality)
-- [Architecture](#architecture)
-- [Getting Started](#getting-started)
-- [Example Usage](#example-usage)
-- [Internal Documentation](#internal-documentation)
+### Table of Contents
 
-## Introduction
+- [1. Introduction](#1-introduction)
+- [2. Setup and Configuration](#2-setup-and-configuration)
+    - [2.1. Retrieving API Key from Storage](#21-retrieving-api-key-from-storage)
+    - [2.2. Connecting with API Key](#22-connecting-with-api-key)
+- [3. Starting the Generative AI Process](#3-starting-the-generative-ai-process)
+    - [3.1. Initializing the Chat](#31-initializing-the-chat)
+- [4. User Input and Response Handling](#4-user-input-and-response-handling)
+    - [4.1. Handling Enter Key Press](#41-handling-enter-key-press)
+    - [4.2. Fetching Documentation from Active Tab](#42-fetching-documentation-from-active-tab)
+    - [4.3. Sending Messages to the Chat](#43-sending-messages-to-the-chat)
+    - [4.4. Displaying Responses](#44-displaying-responses)
+- [5. Helper Functions](#5-helper-functions)
+    - [5.1. getDOM()](#51-getdom)
 
-This document provides internal documentation for the Google Generative AI Chrome extension code. The code implements the functionality of the extension, which allows users to interact with Google's Generative AI models through a chat-based interface.
+### 1. Introduction 
 
-## Functionality
+This code implements a Chrome extension that interacts with Google's Generative AI API to provide a chat-based question-answering experience. It allows users to ask questions based on the content of the currently active web page.
 
-The code performs the following functions:
+### 2. Setup and Configuration 
 
-- Initializes the extension by checking for an API key and displaying the appropriate界面.
-- Establishes a connection to the Generative AI API using the provided API key.
-- Starts a chat session with the selected model and provides an initial history.
-- Handles user input and generates responses using the chat session.
-- Displays the generated responses in the UI.
-- Highlights code snippets using hljs.
+#### 2.1. Retrieving API Key from Storage
 
-## Architecture
+The code first attempts to retrieve the user's Google Generative AI API key from Chrome's storage (`chrome.storage.sync.get`). If a valid API key is found (at least 3 characters long), the `startProcess` function is called.
 
-The code is structured as follows:
+```javascript
+chrome.storage.sync.get(['apiKey']).then(val => {
+    if (val.apiKey && val.apiKey.length > 2) {
+        startProcess(val.apiKey)
+        // ...
+    } 
+})
+```
 
-- **HTML:** The HTML file defines the user interface, including the setup window, prompt window, and response area.
-- **JavaScript:** The JavaScript code handles the logic of the extension, including initialization, API interaction, and UI updates.
-- **GoogleGenerativeAI.js:** This file contains the implementation of the GoogleGenerativeAI class, which provides methods for interacting with the Generative AI API.
+#### 2.2. Connecting with API Key
 
-## Getting Started
+If no valid API key is found, the user is presented with a setup window to enter their API key. 
 
-Developers working on the extension can use this code as a starting point. Before running the code, ensure you have:
+```javascript
+document.getElementById('connect-btn').addEventListener('click', (ev) => {
+    let key = document.getElementById('apiKey').value
+    if (key && key.length > 2) {
+        chrome.storage.sync.set({ apiKey: key })
+        .then(() => {
+            startProcess(key)
+            // ...
+        })
+    }
+    
+})
+```
 
-- Installed the necessary dependencies (marked.js and hljs)
-- Provided a valid API key in the Chrome storage
+### 3. Starting the Generative AI Process
 
-## Example Usage
+#### 3.1. Initializing the Chat
 
-This code can be used to implement various features related to Generative AI interaction. For example, you could:
+The `startProcess` function initializes the Google Generative AI client and starts a new chat session with a predefined initial conversation history.
 
-- Integrate it with other tools or applications
-- Extend the functionality with additional models or commands
-- Customize the UI and branding
+```javascript
+function startProcess(API_KEY) {
+    const genAI = new GoogleGenerativeAI(API_KEY)
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" })
 
-## Internal Documentation
+    window.chat = model.startChat({
+        history: [
+            {
+                role: "user",
+                parts: [{ text: "You are a helper bot that reads documentations and answers questions or explains steps based on that. Be technical and provide to-the-point answers. I will be providing you the html page of the documentation as the knowledge source. Using this answer me further queries." }],
+            },
+            {
+                role: "model",
+                parts: [{ text: "Okay! Share me the documentation and I will help you" }],
+            },
+        ]
+    })
+}
+```
 
-### `startProcess` Function
+### 4. User Input and Response Handling
 
-The `startProcess` function initializes the connection to the Generative AI API and starts a chat session. It takes an API key as an argument and performs the following steps:
+#### 4.1. Handling Enter Key Press
 
-1. Creates an instance of the `GoogleGenerativeAI` class.
-2. Obtains the generative model using the provided model name.
-3. Initializes the chat session with an initial history.
+The code listens for the Enter key press in the input prompt field. When detected, it validates the input length and displays a "Generating..." message. 
 
-### `getDOM` Function
+```javascript
+document.querySelector('#prompt').addEventListener('keypress', async(e) => {
+    if (e.key === 'Enter') {
+        let input = document.getElementById('prompt').value
+        if (input.length < 5) return
+        document.getElementById('prompt').value = ''
+        document.getElementById('response').innerHTML = `<b><u>${input}</u></b><br /><br />Generating...`
+        // ...
+    }
+})
+```
 
-The `getDOM` function is used to retrieve the inner text of the HTML document body. It takes a selector as an argument and returns the text content.
+#### 4.2. Fetching Documentation from Active Tab
 
-### `sendMessageStream` Function
+If this is the first question in the chat session, the code fetches the HTML content of the active web page using `chrome.scripting.executeScript`. The `getDOM` function retrieves the inner text of the page body.
 
-The `sendMessageStream` function sends a message to the chat session and returns a stream of chunks representing the generated response. It takes the message text as an argument and handles errors related to invalid API keys.
+```javascript
+chrome.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+    // ...
+    return chrome.scripting.executeScript({
+        target: { tabId: activeTabId },
+        injectImmediately: true, 
+        func: getDOM,
+        args: ['body']
+    })
+})
+```
 
-### `highlightAll` Function
+#### 4.3. Sending Messages to the Chat
 
-The `highlightAll` function highlights all code snippets in the document using hljs. This helps呈現generated code and improves readability.
+The code sends the user's input to the chat using `window.chat.sendMessageStream`. If it is the first question, the message includes both the HTML content and the user's question.
+
+```javascript
+try {
+    const result = await window.chat.sendMessageStream(`Here you go: ${results[0].result}
+                    And my first question is: ${input}` )
+    // ...
+} catch(e) {
+    // ...
+}
+```
+
+#### 4.4. Displaying Responses
+
+The code iterates through the stream of response chunks returned by the API. Each chunk's text is added to the response area, and the content is parsed using `marked` and highlighted using `hljs`.
+
+```javascript
+let text = document.getElementById('response').innerHTML.replace('Generating...', '')
+for await (const chunk of result.stream) {
+    const chunkText = chunk.text()
+    text += chunkText
+    document.getElementById('response').innerHTML = marked.parse(text)
+    hljs.highlightAll()
+}
+```
+
+### 5. Helper Functions
+
+#### 5.1. getDOM()
+
+This function retrieves the inner text of the page body.
+
+```javascript
+function getDOM (selector) {
+    return document.body.innerText
+}
+```
