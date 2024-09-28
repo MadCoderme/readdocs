@@ -1,154 +1,67 @@
-## Internal Code Documentation
+## Internal Code Documentation - Google Generative AI Chrome Extension
+
+This document provides an internal overview of the Google Generative AI Chrome extension's code.
 
 ### Table of Contents
 
-- [1. Introduction](#1-introduction)
-- [2. Setup and Configuration](#2-setup-and-configuration)
-    - [2.1. Retrieving API Key from Storage](#21-retrieving-api-key-from-storage)
-    - [2.2. Connecting with API Key](#22-connecting-with-api-key)
-- [3. Starting the Generative AI Process](#3-starting-the-generative-ai-process)
-    - [3.1. Initializing the Chat](#31-initializing-the-chat)
-- [4. User Input and Response Handling](#4-user-input-and-response-handling)
-    - [4.1. Handling Enter Key Press](#41-handling-enter-key-press)
-    - [4.2. Fetching Documentation from Active Tab](#42-fetching-documentation-from-active-tab)
-    - [4.3. Sending Messages to the Chat](#43-sending-messages-to-the-chat)
-    - [4.4. Displaying Responses](#44-displaying-responses)
-- [5. Helper Functions](#5-helper-functions)
-    - [5.1. getDOM()](#51-getdom)
+| Section | Description |
+|---|---|
+| [Initialization](#initialization) | Sets up the extension and handles user API key input. |
+| [Chat Functionality](#chat-functionality) | Describes the logic for starting a chat with the Gemini Pro model and sending user prompts. |
+| [DOM Interaction](#dom-interaction) | Explains the handling of DOM elements and user input. |
+| [Error Handling](#error-handling) | Covers the handling of potential errors, including invalid API keys. |
 
-### 1. Introduction 
+### Initialization 
+The code starts by setting up the environment and handling API key initialization:
 
-This code implements a Chrome extension that interacts with Google's Generative AI API to provide a chat-based question-answering experience. It allows users to ask questions based on the content of the currently active web page.
+* **`isInitialized`:** This variable tracks whether the extension has been initialized with a valid API key.  
+* **`chrome.storage.sync.get([\'apiKey\'])`:** This function retrieves the user's API key from Chrome's storage.
+* **`if (val.apiKey && val.apiKey.length > 2)`:** Checks if a valid API key is stored.
+* **`startProcess(val.apiKey)`:**  Initiates the chat process using the retrieved API key.
+* **`document.getElementById(\'setup-window\').style.display = \'none\';`:** Hides the setup window if a valid API key is found.
+* **`document.getElementById(\'prompt-window\').style.display = \'block\';`:** Shows the prompt window to allow the user to interact with the AI.
 
-### 2. Setup and Configuration 
+**Connect Button Event Listener**
 
-#### 2.1. Retrieving API Key from Storage
+* **`document.getElementById(\'connect-btn\').addEventListener(\'click\', (ev) => {...})`:**  This listener is triggered when the "Connect" button is clicked.
+* **`let key = document.getElementById(\'apiKey\').value`:** Retrieves the user-entered API key from the input field.
+* **`if (key && key.length > 2)`:** Checks if the entered key is valid.
+* **`chrome.storage.sync.set({ apiKey: key })`:** Saves the user's API key to Chrome's storage.
+* **`startProcess(key)`:** Starts the chat process with the newly saved key.
+* **`document.getElementById(\'setup-window\').style.display = \'none\';`:**  Hides the setup window. 
+* **`document.getElementById(\'prompt-window\').style.display = \'block\';`:**  Shows the prompt window.
 
-The code first attempts to retrieve the user's Google Generative AI API key from Chrome's storage (`chrome.storage.sync.get`). If a valid API key is found (at least 3 characters long), the `startProcess` function is called.
+### Chat Functionality 
 
-```javascript
-chrome.storage.sync.get(['apiKey']).then(val => {
-    if (val.apiKey && val.apiKey.length > 2) {
-        startProcess(val.apiKey)
-        // ...
-    } 
-})
-```
+The core chat functionality is encapsulated in the `startProcess` function:
 
-#### 2.2. Connecting with API Key
+* **`const genAI = new GoogleGenerativeAI(API_KEY)`:** Creates a new instance of the `GoogleGenerativeAI` class using the provided API key. 
+* **`const model = genAI.getGenerativeModel({ model: "gemini-pro" })`:**  Gets an instance of the "gemini-pro" model.
+* **`window.chat = model.startChat(...)`:** Initializes a chat session with the model, providing an initial history of messages.
 
-If no valid API key is found, the user is presented with a setup window to enter their API key. 
+### DOM Interaction 
 
-```javascript
-document.getElementById('connect-btn').addEventListener('click', (ev) => {
-    let key = document.getElementById('apiKey').value
-    if (key && key.length > 2) {
-        chrome.storage.sync.set({ apiKey: key })
-        .then(() => {
-            startProcess(key)
-            // ...
-        })
-    }
-    
-})
-```
+The DOM is manipulated to handle user prompts, display responses, and manage the user interface:
 
-### 3. Starting the Generative AI Process
+* **`document.querySelector(\'#prompt\').addEventListener(\'keypress\', async(e) => {...})`:**  Listens for the "Enter" key press in the prompt input field.
+* **`if (e.key === \'Enter\')`:**  Triggers actions when the "Enter" key is pressed.
+* **`let input = document.getElementById(\'prompt\').value`:** Retrieves the user's input from the prompt field.
+* **`if (input.length < 5) return`:**  Prevents submission of very short prompts.
+* **`document.getElementById(\'prompt\').value = \'\'`:** Clears the prompt field.
+* **`document.getElementById(\'response\').innerHTML = `<b><u>${input}</u></b><br /><br />Generating...`:**  Displays the user's input and a "Generating..." message in the response area.
 
-#### 3.1. Initializing the Chat
+**Retrieving DOM Content:**
 
-The `startProcess` function initializes the Google Generative AI client and starts a new chat session with a predefined initial conversation history.
+* **`chrome.tabs.query({ active: true, currentWindow: true })`:** Retrieves the active tab in the current window.
+* **`chrome.scripting.executeScript({ target: { tabId: activeTabId }, injectImmediately: true, func: getDOM, args: [\'body\'] })`:** Executes the `getDOM` function in the active tab to retrieve the content of the `<body>` element.
+* **`function getDOM (selector) { return document.body.innerText }`:**  This function gets the inner text of the `<body>` element.
 
-```javascript
-function startProcess(API_KEY) {
-    const genAI = new GoogleGenerativeAI(API_KEY)
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" })
+### Error Handling 
 
-    window.chat = model.startChat({
-        history: [
-            {
-                role: "user",
-                parts: [{ text: "You are a helper bot that reads documentations and answers questions or explains steps based on that. Be technical and provide to-the-point answers. I will be providing you the html page of the documentation as the knowledge source. Using this answer me further queries." }],
-            },
-            {
-                role: "model",
-                parts: [{ text: "Okay! Share me the documentation and I will help you" }],
-            },
-        ]
-    })
-}
-```
+The code includes error handling for invalid API keys:
 
-### 4. User Input and Response Handling
-
-#### 4.1. Handling Enter Key Press
-
-The code listens for the Enter key press in the input prompt field. When detected, it validates the input length and displays a "Generating..." message. 
-
-```javascript
-document.querySelector('#prompt').addEventListener('keypress', async(e) => {
-    if (e.key === 'Enter') {
-        let input = document.getElementById('prompt').value
-        if (input.length < 5) return
-        document.getElementById('prompt').value = ''
-        document.getElementById('response').innerHTML = `<b><u>${input}</u></b><br /><br />Generating...`
-        // ...
-    }
-})
-```
-
-#### 4.2. Fetching Documentation from Active Tab
-
-If this is the first question in the chat session, the code fetches the HTML content of the active web page using `chrome.scripting.executeScript`. The `getDOM` function retrieves the inner text of the page body.
-
-```javascript
-chrome.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
-    // ...
-    return chrome.scripting.executeScript({
-        target: { tabId: activeTabId },
-        injectImmediately: true, 
-        func: getDOM,
-        args: ['body']
-    })
-})
-```
-
-#### 4.3. Sending Messages to the Chat
-
-The code sends the user's input to the chat using `window.chat.sendMessageStream`. If it is the first question, the message includes both the HTML content and the user's question.
-
-```javascript
-try {
-    const result = await window.chat.sendMessageStream(`Here you go: ${results[0].result}
-                    And my first question is: ${input}` )
-    // ...
-} catch(e) {
-    // ...
-}
-```
-
-#### 4.4. Displaying Responses
-
-The code iterates through the stream of response chunks returned by the API. Each chunk's text is added to the response area, and the content is parsed using `marked` and highlighted using `hljs`.
-
-```javascript
-let text = document.getElementById('response').innerHTML.replace('Generating...', '')
-for await (const chunk of result.stream) {
-    const chunkText = chunk.text()
-    text += chunkText
-    document.getElementById('response').innerHTML = marked.parse(text)
-    hljs.highlightAll()
-}
-```
-
-### 5. Helper Functions
-
-#### 5.1. getDOM()
-
-This function retrieves the inner text of the page body.
-
-```javascript
-function getDOM (selector) {
-    return document.body.innerText
-}
-```
+* **`try...catch`:**  A `try...catch` block is used to handle potential errors during the `sendMessageStream` call.
+* **`if (e.message.includes(\'API_KEY_INVALID\'))`:**  Checks if the error message indicates an invalid API key.
+* **`document.getElementById(\'setup-window\').style.display = \'block\';`:**  Shows the setup window.
+* **`document.getElementById(\'prompt-window\').style.display = \'none\';`:**  Hides the prompt window.
+* **`alert(\'Your API Key is invalid. Try again with a valid key\')`:**  Displays an alert message to the user.
