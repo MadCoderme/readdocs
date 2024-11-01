@@ -76,7 +76,7 @@ document.querySelector('#prompt').addEventListener('keypress', async(e) => {
                     const result = await window.chat.sendMessageStream(`Here you go: ${results[0].result}
                     And my first question is: ${input}` )
 
-                    let text = document.getElementById('response').innerHTML.replace('Generating...', '')
+                    let text = document.getElementById('response').innerHTML.replace('Generating Response...', '')
                     for await (const chunk of result.stream) {
                         const chunkText = chunk.text()
                         text += chunkText
